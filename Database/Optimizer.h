@@ -88,6 +88,9 @@ class Optimizer
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(SPARQLquery&,QueryInfo); // the whole process
   tuple<bool,shared_ptr<IntermediateResult>> DoQuery(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info); // the whole process
 
+  pair<long long, long long> get_est_for_one_triple(std::shared_ptr<BGPQuery> bgpquery);
+  pair<long long, long long> get_est_for_BGP(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info);
+
  private:
   tuple<bool,shared_ptr<IntermediateResult>> MergeBasicQuery(SPARQLquery &sparql_query);
 

@@ -439,6 +439,94 @@ tuple<bool, shared_ptr<IntermediateResult>> Optimizer::DoQuery(std::shared_ptr<B
 
 }
 
+pair<long long, long long> Optimizer::get_est_for_one_triple(std::shared_ptr<BGPQuery> bgpquery) {
+	bool s_is_const = bgpquery->s_is_constant_[0];
+	bool p_is_const = bgpquery->p_is_constant_[0];
+	bool o_is_const = bgpquery->o_is_constant_[0];
+
+	unsigned var_num = bgpquery->get_total_var_num();
+
+	if(var_num == 3)
+		return make_pair(triples_num_, triples_num_/4);
+	else{
+		if(var_num == 2){
+			if(s_is_const){
+				auto size = kv_store_->getEntityOutDegree(bgpquery->s_id_[0]);
+				return make_pair(size, size/4);
+			}
+			if(p_is_const){
+				auto size = kv_store_->getPredicateDegree(bgpquery->p_id_[0]);
+				return make_pair(size, size/4);
+			}
+			if(o_is_const){
+				unsigned size;
+				if(bgpquery->o_id_[0] >= Util::LITERAL_FIRST_ID)
+					size = kv_store_->getLiteralDegree(bgpquery->o_id_[0]);
+				else
+					size = kv_store_->getEntityInDegree(bgpquery->o_id_[0]);
+				return make_pair(size, size/4);
+			}
+		}else{
+			// var_num == 1
+			if(!s_is_const){
+				auto size = kv_store_->getObjectPredicateDegree(bgpquery->o_id_[0], bgpquery->p_id_[0]);
+				return make_pair(size, size/4);
+			}
+			if(!p_is_const){
+				// todo: call zhouyuqi to opt this
+				unsigned *p_list = nullptr;
+				unsigned p_list_len = 0;
+				kv_store_->getpreIDlistBysubIDobjID(bgpquery->s_id_[0], bgpquery->o_id_[0], p_list, p_list_len);
+				auto size = p_list_len;
+				delete[] p_list;
+				return make_pair(size, size/2);
+			}
+			if(!o_is_const){
+				auto size = kv_store_->getSubjectPredicateDegree(bgpquery->s_id_[0], bgpquery->p_id_[0]);
+				return make_pair(size, size/4);
+			}
+		}
+
+	}
+	cout << "error in Optimizer::get_est_for_one_triple" << endl;
+	exit(-1);
+}
+
+pair<long long, long long> Optimizer::get_est_for_BGP(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
+	auto var_candidates_cache = bgp_query->get_all_candidates();
+	// auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
+	auto distinct = bgp_query->distinct_query;
+	if(bgp_query->get_triple_num()==1){
+		return get_est_for_one_triple(bgp_query);
+	}else{
+		PlanGenerator plan_generator(kv_store_, bgp_query.get(), statistics, var_candidates_cache, triples_num_,
+									 limitID_predicate_, limitID_literal_, limitID_entity_, pre2num_, pre2sub_, pre2obj_, txn_);
+		long t1 =Util::get_cur_time();
+		auto const_candidates = QueryPlan::OnlyConstFilter(bgp_query,this->kv_store_);
+		for (auto &constant_generating_step: *const_candidates)
+			executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+
+		long t2 = Util::get_cur_time();
+		cout << "get var cache, used " << (t2 - t1) << "ms." << endl;
+		long t3 = Util::get_cur_time();
+		cout << "id_list.size = " << var_candidates_cache->size() << endl;
+
+		cout << "limited literal  = " << limitID_literal_ << ", limited entity =  " << limitID_entity_ << endl;
+
+		auto second_run_candidates_plan = plan_generator.completecandidate();
+		long t3_ = Util::get_cur_time();
+		cout << "complete candidate done, size = " << second_run_candidates_plan.size() << endl;
+
+		for(const auto& constant_generating_step: second_run_candidates_plan)
+			executor_.CacheConstantCandidates(constant_generating_step, true, var_candidates_cache);
+
+		return plan_generator.get_rest_size_cost_est_for_BGP();
+	}
+	cout << "error in Optimizer::get_est_for_BGP" << endl;
+	exit(-1);
+
+}
+
 tuple<bool, shared_ptr<IntermediateResult>> Optimizer::MergeBasicQuery(SPARQLquery &sparql_query) {
   return tuple<bool, shared_ptr<IntermediateResult>>();
 }

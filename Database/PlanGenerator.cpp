@@ -1347,6 +1347,18 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
 
+	int index = 1;
+	for(const auto &nodes_cards : card_cache[join_nodes.size() - 1]){
+		if(!index) {
+			cout << "error in PlanGenerator::get_plan" << endl;
+			exit(-1);
+		}
+		BGP_res_size_est = nodes_cards.second;
+		--index;
+	}
+
+	BGP_cost_est = best_plan->plan_cost;
+
 	// todo: 这个卫星点应该也有卫星谓词变量
 	// s ?p ?o. 在之前的计划中已经加入了?o, 则这一步也需要加入?p
 	addsatellitenode(best_plan);
@@ -1361,6 +1373,10 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 
 }
 
+pair<long long, long long> PlanGenerator::get_rest_size_cost_est_for_BGP() {
+	auto best_execution_plan = get_plan();
+	return make_pair(BGP_res_size_est, BGP_cost_est);
+}
 
 // Codes below is for generating random plan
 

@@ -63,6 +63,10 @@ public:
 	vector<unsigned> satellite_nodes;
 	set<unsigned> already_done_satellite;
 
+
+	long long BGP_cost_est;
+	long long BGP_res_size_est;
+
 	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
@@ -118,6 +122,10 @@ public:
 	void addsatellitenode(PlanTree* best_plan);
 
 	PlanTree* get_plan(bool use_binary_join = true);
+
+	pair<long long, long long> get_rest_size_cost_est_for_BGP();
+	long long get_res_size_est_for_BGP();
+	long long get_cost_est_for_BGP();
 
 
 	unsigned choose_first_var_id_random();
