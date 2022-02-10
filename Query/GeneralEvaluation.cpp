@@ -128,6 +128,7 @@ GeneralEvaluation::GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics,
 	well_designed = -1;	// Not checked yet
 	this->optimizer_ = make_shared<Optimizer>(kvstore,statistics,pre2num,pre2sub,pre2obj,triples_num,limitID_predicate,
                                       limitID_literal,limitID_entity,txn);
+	this->bgp_query_total = make_shared<BGPQuery>();
 }
 
 GeneralEvaluation::~GeneralEvaluation()
@@ -463,34 +464,22 @@ bool GeneralEvaluation::highLevelOpt(QueryTree::GroupPattern &group_pattern, Var
 void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
 	const QueryTree::GroupPattern::SubGroupPattern &unionNode, Varset useful, vector<long long> &cost)
 {
-	auto bgp_query_large = make_shared<BGPQuery>();
-	Varset occur;
-
 	// Gather BGPs for MQO
 	vector<QueryTree::GroupPattern::SubGroupPattern> multiBGP;
 	for (size_t i = 0; i < unionNode.unions.size(); i++)
 	{
-		bool firstBGP = true;
 		for (size_t j = 0; j < unionNode.unions[i].sub_group_pattern.size(); j++)
 		{
 			if (unionNode.unions[i].sub_group_pattern[j].type \
 				== QueryTree::GroupPattern::SubGroupPattern::BGP_type)
 			{
-				if (firstBGP)
-					multiBGP.emplace_back(unionNode.unions[i].sub_group_pattern[j]);
-				for (size_t k = 0; k < unionNode.unions[i].sub_group_pattern[j].patterns.size(); k++)
-				{
-					bgp_query_large->AddTriple(Triple(unionNode.unions[i].sub_group_pattern[j].patterns[k].subject.value, \
-						unionNode.unions[i].sub_group_pattern[j].patterns[k].predicate.value, \
-						unionNode.unions[i].sub_group_pattern[j].patterns[k].object.value));
-					occur += unionNode.unions[i].sub_group_pattern[j].patterns[k].varset;
-				}
+				multiBGP.emplace_back(unionNode.unions[i].sub_group_pattern[j]);
+				break;
 				// TODO: Now if multiple BGPs in a UNION'd graph pattern, only select the first one
 				// But more generally, common subquery may occur later, need to backtrack
 			}
 		}
 	}
-	bgp_query_large->EncodeBGPQuery(kvstore, (useful + occur).vars, this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 
 	// Do not consider those without any BGP directly under UNION group graph patterns
 	if (multiBGP.empty())
@@ -515,7 +504,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 	long long cost_bgp_ori;
 	auto bgp_query_outer = make_shared<BGPQuery>(outerBGP.patterns);
 	getEncodeVarset(encode_varset, useful, outerBGP.patterns);
-	curr_exist = bgp_query_outer->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+	curr_exist = bgp_query_outer->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 		this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 	pair<long long, long long> est_outer;
 	if (curr_exist)
@@ -530,7 +519,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 		bgp_query_inner.emplace_back(make_shared<BGPQuery>(multiBGP[i].patterns));
 		
 		getEncodeVarset(encode_varset, useful, multiBGP[i].patterns);
-		curr_exist = (bgp_query_inner.back())->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+		curr_exist = (bgp_query_inner.back())->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 		
 		if (curr_exist)
@@ -562,7 +551,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 				{
 					auto bgp_query_tmp = make_shared<BGPQuery>(unionNode.unions[i].sub_group_pattern[j].patterns);
 					getEncodeVarset(encode_varset, useful, unionNode.unions[i].sub_group_pattern[j].patterns);
-					curr_exist = bgp_query_tmp->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+					curr_exist = bgp_query_tmp->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 						this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 					if (curr_exist)
 						res_partial *= optimizer_->get_est_for_BGP(bgp_query_tmp).first;
@@ -605,7 +594,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 		bgp_query_plan1.emplace_back(make_shared<BGPQuery>(tmp_patterns));
 
 		getEncodeVarset(encode_varset, useful, tmp_patterns);
-		curr_exist = (bgp_query_plan1.back())->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+		curr_exist = (bgp_query_plan1.back())->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 
 		if (curr_exist)
@@ -640,7 +629,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 	Util::vectorSum<QueryTree::GroupPattern::Pattern>(outerBGP.patterns, subBGP, tmp_patterns);
 	auto bgp_query_outer_plan2 = make_shared<BGPQuery>(tmp_patterns);
 	getEncodeVarset(encode_varset, useful, tmp_patterns);
-	curr_exist = bgp_query_outer_plan2->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+	curr_exist = bgp_query_outer_plan2->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 		this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 	pair<long long, long long> est_outer_plan2;
 	if (curr_exist)
@@ -656,7 +645,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 		bgp_query_plan2.emplace_back(make_shared<BGPQuery>(tmp_patterns));
 
 		getEncodeVarset(encode_varset, useful, tmp_patterns);
-		curr_exist = (bgp_query_plan2.back())->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+		curr_exist = (bgp_query_plan2.back())->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 
 		if (curr_exist)
@@ -680,7 +669,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 	long long cost_bgp_plan3;
 	auto bgp_query_outer_plan3 = make_shared<BGPQuery>(subBGP);
 	getEncodeVarset(encode_varset, useful, subBGP);
-	curr_exist = bgp_query_outer_plan3->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+	curr_exist = bgp_query_outer_plan3->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 		this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 	pair<long long, long long> est_outer_plan3;
 	if (curr_exist)
@@ -698,7 +687,7 @@ void GeneralEvaluation::unionCostModel(const QueryTree::GroupPattern::SubGroupPa
 		bgp_query_plan3.emplace_back(make_shared<BGPQuery>(tmp_patterns));
 
 		getEncodeVarset(encode_varset, useful, tmp_patterns);
-		curr_exist = (bgp_query_plan3.back())->EncodeSmallBGPQuery(bgp_query_large.get(), kvstore, encode_varset.vars, \
+		curr_exist = (bgp_query_plan3.back())->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, encode_varset.vars, \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 
 		if (curr_exist)
@@ -769,10 +758,6 @@ bool GeneralEvaluation::doQuery()
 {
 	// query_tree.print();
 
-	rewriteQuery();
-
-	exit(0);
-
 	if (!this->query_tree.checkProjectionAsterisk() && this->query_tree.getProjection().empty())
 		return false;
 
@@ -797,6 +782,15 @@ bool GeneralEvaluation::doQuery()
 		printf("[ERROR]	There are some vars occur both in subject/object and predicate.\n");
 		return false;
 	}
+
+	// Gather and encode all triples
+	addAllTriples(this->query_tree.getGroupPattern());
+	bgp_query_total->EncodeBGPQuery(kvstore, vector<string>(), \
+			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
+
+	rewriteQuery();
+
+	exit(0);
 
 	// this->strategy = Strategy(this->kvstore, this->pre2num,this->pre2sub, this->pre2obj, 
 	// 	this->limitID_predicate, this->limitID_literal, this->limitID_entity,
@@ -3673,3 +3667,30 @@ void GeneralEvaluation::joinBasicQueryResult(SPARQLquery& sparql_query, TempResu
 	printf("11111\n");
 }
 
+void GeneralEvaluation::addAllTriples(const QueryTree::GroupPattern &group_pattern)
+{
+	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+	{
+		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+			addAllTriples(group_pattern.sub_group_pattern[i].group_pattern);
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		{
+			for (size_t j = 0; j < group_pattern.sub_group_pattern[i].unions.size(); j++)
+				addAllTriples(group_pattern.sub_group_pattern[i].unions[j]);
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type \
+			|| group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+			addAllTriples(group_pattern.sub_group_pattern[i].optional);
+	}
+
+	for (size_t i = 0; i < group_pattern.sub_group_pattern.size(); i++)
+	{
+		// Here not yet transformed into BGP_type
+		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+		{
+			bgp_query_total->AddTriple(Triple(group_pattern.sub_group_pattern[i].pattern.subject.value, \
+					group_pattern.sub_group_pattern[i].pattern.predicate.value, \
+					group_pattern.sub_group_pattern[i].pattern.object.value));
+		}
+	}
+}

@@ -53,6 +53,8 @@ class GeneralEvaluation
 		TYPE_ENTITY_LITERAL_ID limitID_literal;
 		TYPE_ENTITY_LITERAL_ID limitID_entity;
 		shared_ptr<Transaction> txn;
+
+		shared_ptr<BGPQuery> bgp_query_total;
     public:
     	FILE* fp;
     	bool export_flag;
@@ -80,6 +82,8 @@ class GeneralEvaluation
 			const vector<QueryTree::GroupPattern::Pattern> &smallBGP);
 
 		bool doQuery();
+
+		void addAllTriples(const QueryTree::GroupPattern &group_pattern);
 
 		void setStringIndexPointer(StringIndex* _tmpsi);
 		
