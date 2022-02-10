@@ -508,6 +508,9 @@ public:
 	static std::pair<bool, double> checkGetNumericLiteral(std::string&);
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
 
+	template<class T> static void vectorSum(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &sum);
+	template<class T> static void vectorSubtract(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &subtract);
+
  private:
 	static void formatPrint(std::string content, std::string type = "Info");
     static bool checkPort(int port);
@@ -1237,5 +1240,27 @@ class MD5
             memset(x, 0, sizeof x);
         }
 };
+
+// Concat y at the end of x, put into sum
+template <class T>
+void Util::vectorSum(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &sum)
+{
+    sum.clear();
+    sum.insert(sum.end(), x.begin(), x.end());
+    sum.insert(sum.end(), y.begin(), y.end());
+}
+
+// Get elements in x but not in y, put into subtract (in x original order)
+template <class T>
+void Util::vectorSubtract(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &subtract)
+{
+    subtract.clear();
+    for (size_t i = 0; i < x.size(); i++)
+    {
+        if (find(y.begin(), y.end(), x[i]) == y.end())
+            subtract.insert(subtract.end(), x[i]);
+    }
+}
+
 #endif //_UTIL_UTIL_H
 

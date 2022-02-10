@@ -492,7 +492,7 @@ pair<long long, long long> Optimizer::get_est_for_one_triple(std::shared_ptr<BGP
 	exit(-1);
 }
 
-pair<long long, long long> Optimizer::get_est_for_BGP(std::shared_ptr<BGPQuery> bgp_query,QueryInfo query_info) {
+pair<long long, long long> Optimizer::get_est_for_BGP(std::shared_ptr<BGPQuery> bgp_query) {
 	auto var_candidates_cache = bgp_query->get_all_candidates();
 	// auto var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
 	auto distinct = bgp_query->distinct_query;

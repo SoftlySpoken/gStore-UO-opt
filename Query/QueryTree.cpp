@@ -434,6 +434,31 @@ void QueryTree::GroupPattern::getVarset()
 			this->group_pattern_resultset_minimal_varset += this->sub_group_pattern[i].pattern.varset;
 			this->group_pattern_resultset_maximal_varset += this->sub_group_pattern[i].pattern.varset;
 		}
+		else if (this->sub_group_pattern[i].type == SubGroupPattern::BGP_type)
+		{
+			for (size_t j = 0; j < sub_group_pattern[i].patterns.size(); j++)
+			{
+				if (this->sub_group_pattern[i].patterns[j].subject.value[0] == '?')
+				{
+					this->sub_group_pattern[i].patterns[j].varset.addVar(this->sub_group_pattern[i].patterns[j].subject.value);
+					this->sub_group_pattern[i].patterns[j].subject_object_varset.addVar(this->sub_group_pattern[i].patterns[j].subject.value);
+					this->group_pattern_subject_object_maximal_varset.addVar(this->sub_group_pattern[i].patterns[j].subject.value);
+				}
+				if (this->sub_group_pattern[i].patterns[j].predicate.value[0] == '?')
+				{
+					this->sub_group_pattern[i].patterns[j].varset.addVar(this->sub_group_pattern[i].patterns[j].predicate.value);
+					this->group_pattern_predicate_maximal_varset.addVar(this->sub_group_pattern[i].patterns[j].predicate.value);
+				}
+				if (this->sub_group_pattern[i].patterns[j].object.value[0] == '?')
+				{
+					this->sub_group_pattern[i].patterns[j].varset.addVar(this->sub_group_pattern[i].patterns[j].object.value);
+					this->sub_group_pattern[i].patterns[j].subject_object_varset.addVar(this->sub_group_pattern[i].patterns[j].object.value);
+					this->group_pattern_subject_object_maximal_varset.addVar(this->sub_group_pattern[i].patterns[j].object.value);
+				}
+				this->group_pattern_resultset_minimal_varset += this->sub_group_pattern[i].patterns[j].varset;
+				this->group_pattern_resultset_maximal_varset += this->sub_group_pattern[i].patterns[j].varset;
+			}
+		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Union_type)
 		{
 			Varset minimal_varset;
@@ -614,6 +639,23 @@ void QueryTree::GroupPattern::print(int dep)
 			printf("%s\t%s\t%s.\n",	this->sub_group_pattern[i].pattern.subject.value.c_str(),
 									this->sub_group_pattern[i].pattern.predicate.value.c_str(),
 									this->sub_group_pattern[i].pattern.object.value.c_str());
+		}
+		else if (this->sub_group_pattern[i].type == SubGroupPattern::BGP_type)
+		{
+			for (int t = 0; t <= dep; t++)
+				printf("\t");
+			printf("-----BGP start-----\n");
+			for (size_t j = 0; j < this->sub_group_pattern[i].patterns.size(); j++)
+			{
+				for (int t = 0; t <= dep; t++)
+					printf("\t");
+				printf("%s\t%s\t%s.\n",	this->sub_group_pattern[i].patterns[j].subject.value.c_str(),
+										this->sub_group_pattern[i].patterns[j].predicate.value.c_str(),
+										this->sub_group_pattern[i].patterns[j].object.value.c_str());
+			}
+			for (int t = 0; t <= dep; t++)
+				printf("\t");
+			printf("-----BGP end-----\n");
 		}
 		else if (this->sub_group_pattern[i].type == SubGroupPattern::Union_type)
 		{

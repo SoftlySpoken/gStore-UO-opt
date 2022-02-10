@@ -68,6 +68,17 @@ class GeneralEvaluation
 		bool parseQuery(const std::string &_query);
 		QueryTree& getQueryTree();
 
+		bool rewriteQuery();	// Calls the following two procedures
+		int combineBGPunfoldUnion(QueryTree::GroupPattern &group_pattern);
+		bool highLevelOpt(QueryTree::GroupPattern &group_pattern, Varset useful);
+		
+		void unionCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
+			const QueryTree::GroupPattern::SubGroupPattern &unionNode, Varset useful, vector<long long> &cost);
+		void extractLargestCommonSubBGP(const vector<QueryTree::GroupPattern::SubGroupPattern> &multiBGP, \
+			vector<QueryTree::GroupPattern::Pattern> &subBGP);
+		void getEncodeVarset(Varset &encode_varset, const Varset &useful, \
+			const vector<QueryTree::GroupPattern::Pattern> &smallBGP);
+
 		bool doQuery();
 
 		void setStringIndexPointer(StringIndex* _tmpsi);

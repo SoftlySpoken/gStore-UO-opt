@@ -99,6 +99,15 @@ class QueryTree
 						return this->predicate.value < x.predicate.value;
 					return (this->object.value < x.object.value);
 				}
+
+				bool operator == (const Pattern &x) const
+				{
+					if (this->subject.value == x.subject.value \
+						&& this->predicate.value == x.predicate.value \
+						&& this->object.value == x.object.value)
+						return true;
+					return false;
+				}
 		};
 
 		class PathArgs
@@ -198,10 +207,11 @@ class QueryTree
 		class GroupPattern::SubGroupPattern
 		{
 			public:
-				enum SubGroupPatternType{Group_type, Pattern_type, Union_type, Optional_type, Minus_type, Filter_type, Bind_type};
+				enum SubGroupPatternType{Group_type, Pattern_type, BGP_type, Union_type, Optional_type, Minus_type, Filter_type, Bind_type};
 				SubGroupPatternType type;
 
 				Pattern pattern;	// triplesBlock
+				std::vector<Pattern> patterns;
 
 				// graphPatternNotTriples
 				GroupPattern group_pattern;
@@ -211,10 +221,13 @@ class QueryTree
 				CompTreeNode filter;
 				Bind bind;	// bind
 
-				SubGroupPattern(SubGroupPatternType _type):type(_type){}
-				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type)
+				long long resSz;
+
+				SubGroupPattern(SubGroupPatternType _type):type(_type), resSz(0){}
+				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type), resSz(0)
 				{
 					pattern = _sgp.pattern;
+					patterns = _sgp.patterns;
 					unions = _sgp.unions;
 					optional = _sgp.optional;
 					filter = _sgp.filter;

@@ -20,6 +20,7 @@
 #ifndef GSTORE_BGPQUERY_H
 #define GSTORE_BGPQUERY_H
 
+#include "QueryTree.h"
 #include "BasicQuery.h"
 #include "../Util/Util.h"
 #include "../Util/Triple.h"
@@ -193,6 +194,7 @@ public:
 
 
 	BGPQuery();
+	BGPQuery(const std::vector<QueryTree::GroupPattern::Pattern> &patterns);
 	~BGPQuery();
 	void initial();
 

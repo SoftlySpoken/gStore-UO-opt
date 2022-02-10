@@ -117,6 +117,15 @@ BGPQuery::BGPQuery() {
 
 }
 
+BGPQuery::BGPQuery(const vector<QueryTree::GroupPattern::Pattern> &patterns)
+{
+	this->initial();
+	var_candidates_cache = make_shared<map<TYPE_ENTITY_LITERAL_ID,shared_ptr<IDList>>>();
+
+	for (size_t i = 0; i < patterns.size(); i++)
+		this->AddTriple(Triple(patterns[i].subject.value, patterns[i].predicate.value, patterns[i].object.value));
+}
+
 BGPQuery::~BGPQuery() {
 	for(auto p:result_list) delete[] p;
 }
