@@ -1348,7 +1348,7 @@ PlanTree *PlanGenerator::get_plan(bool use_binary_join) {
 	PlanTree* best_plan = get_best_plan_by_num(join_nodes.size());
 
 	int index = 1;
-	for(const auto &nodes_cards : card_cache[join_nodes.size() - 1]){
+	for(const auto &nodes_cards : card_cache[join_nodes.size() - 2]){
 		if(!index) {
 			cout << "error in PlanGenerator::get_plan" << endl;
 			exit(-1);
