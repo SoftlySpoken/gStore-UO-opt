@@ -447,16 +447,16 @@ pair<long long, long long> Optimizer::get_est_for_one_triple(std::shared_ptr<BGP
 	unsigned var_num = bgpquery->get_total_var_num();
 
 	if(var_num == 3)
-		return make_pair(triples_num_, max(triples_num_/4, 1));
+		return make_pair(triples_num_, max(triples_num_/4, 1ull));
 	else{
 		if(var_num == 2){
 			if(s_is_const){
 				auto size = kv_store_->getEntityOutDegree(bgpquery->s_id_[0]);
-				return make_pair(size, max(size/4, 1));
+				return make_pair(size, max(size/4, 1u));
 			}
 			if(p_is_const){
 				auto size = kv_store_->getPredicateDegree(bgpquery->p_id_[0]);
-				return make_pair(size, max(size/4, 1));
+				return make_pair(size, max(size/4, 1u));
 			}
 			if(o_is_const){
 				unsigned size;
@@ -464,13 +464,13 @@ pair<long long, long long> Optimizer::get_est_for_one_triple(std::shared_ptr<BGP
 					size = kv_store_->getLiteralDegree(bgpquery->o_id_[0]);
 				else
 					size = kv_store_->getEntityInDegree(bgpquery->o_id_[0]);
-				return make_pair(size, max(size/4, 1));
+				return make_pair(size, max(size/4, 1u));
 			}
 		}else{
 			// var_num == 1
 			if(!s_is_const){
 				auto size = kv_store_->getObjectPredicateDegree(bgpquery->o_id_[0], bgpquery->p_id_[0]);
-				return make_pair(size, max(size/4, 1));
+				return make_pair(size, max(size/4, 1u));
 			}
 			if(!p_is_const){
 				// todo: call zhouyuqi to opt this
@@ -479,11 +479,11 @@ pair<long long, long long> Optimizer::get_est_for_one_triple(std::shared_ptr<BGP
 				kv_store_->getpreIDlistBysubIDobjID(bgpquery->s_id_[0], bgpquery->o_id_[0], p_list, p_list_len);
 				auto size = p_list_len;
 				delete[] p_list;
-				return make_pair(size, max(size/2, 1));
+				return make_pair(size, max(size/2, 1u));
 			}
 			if(!o_is_const){
 				auto size = kv_store_->getSubjectPredicateDegree(bgpquery->s_id_[0], bgpquery->p_id_[0]);
-				return make_pair(size, max(size/4, 1));
+				return make_pair(size, max(size/4, 1u));
 			}
 		}
 
