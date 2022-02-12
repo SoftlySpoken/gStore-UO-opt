@@ -75,7 +75,12 @@ class GeneralEvaluation
 		bool highLevelOpt(QueryTree::GroupPattern &group_pattern, Varset useful);
 		
 		void unionCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
-			const QueryTree::GroupPattern::SubGroupPattern &unionNode, Varset useful, vector<long long> &cost);
+			const QueryTree::GroupPattern::SubGroupPattern &unionNode, \
+			const vector<QueryTree::GroupPattern::SubGroupPattern> &multiBGP,
+			const vector<QueryTree::GroupPattern::Pattern> &subBGP,
+			Varset useful, vector<long long> &cost);
+		bool optionalCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
+			const QueryTree::GroupPattern::SubGroupPattern &optionalNode, Varset useful);
 		void extractLargestCommonSubBGP(const vector<QueryTree::GroupPattern::SubGroupPattern> &multiBGP, \
 			vector<QueryTree::GroupPattern::Pattern> &subBGP);
 		void getEncodeVarset(Varset &encode_varset, const Varset &useful, \

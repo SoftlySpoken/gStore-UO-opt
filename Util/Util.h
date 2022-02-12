@@ -509,7 +509,9 @@ public:
 	static std::string getArgValue(int argc, char* argv[], std::string argname,std::string argname2, std::string default_value="");
 
 	template<class T> static void vectorSum(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &sum);
+	template<class T> static void vectorSum(std::vector<T> &x, const std::vector<T> &y);
 	template<class T> static void vectorSubtract(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &subtract);
+	template<class T> static void vectorSubtract(std::vector<T> &x, const std::vector<T> &y);
 
  private:
 	static void formatPrint(std::string content, std::string type = "Info");
@@ -1250,6 +1252,13 @@ void Util::vectorSum(const std::vector<T> &x, const std::vector<T> &y, std::vect
     sum.insert(sum.end(), y.begin(), y.end());
 }
 
+// Concat y at the end of x (in place)
+template <class T>
+void Util::vectorSum(std::vector<T> &x, const std::vector<T> &y)
+{
+    x.insert(x.end(), y.begin(), y.end());
+}
+
 // Get elements in x but not in y, put into subtract (in x original order)
 template <class T>
 void Util::vectorSubtract(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &subtract)
@@ -1260,6 +1269,20 @@ void Util::vectorSubtract(const std::vector<T> &x, const std::vector<T> &y, std:
         if (find(y.begin(), y.end(), x[i]) == y.end())
             subtract.insert(subtract.end(), x[i]);
     }
+}
+
+// Remove elements in y from x (in place)
+template <class T>
+void Util::vectorSubtract(std::vector<T> &x, const std::vector<T> &y)
+{
+    std::vector<size_t> common;
+    for (size_t i = 0; i < x.size(); i++)
+	{
+		if (find(y.begin(), y.end(), x[i]) != y.end())
+			common.emplace_back(i);
+	}
+	for (size_t i = 0; i < common.size(); i++)
+		x.erase(x.begin() + common[i] - i);
 }
 
 #endif //_UTIL_UTIL_H

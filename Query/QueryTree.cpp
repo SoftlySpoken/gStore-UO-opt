@@ -598,7 +598,8 @@ void QueryTree::GroupPattern::initPatternBlockid()
 */
 int QueryTree::GroupPattern::getRootPatternBlockID(int x)
 {
-	if (this->sub_group_pattern[x].type != SubGroupPattern::Pattern_type)
+	if (this->sub_group_pattern[x].type != SubGroupPattern::Pattern_type \
+		&& this->sub_group_pattern[x].type != SubGroupPattern::BGP_type)
 		throw "QueryTree::GroupPattern::getRootPatternBlockID failed";
 
 	if (this->sub_group_pattern[x].pattern.blockid == x)
