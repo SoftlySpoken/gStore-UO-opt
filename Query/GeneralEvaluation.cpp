@@ -605,7 +605,7 @@ bool GeneralEvaluation::highLevelOpt(QueryTree::GroupPattern &group_pattern, Var
 						break;
 					}
 				}
-				merged.emplace_back(i);
+				// A should not be remove from outer
 			}
 			// Else, nothing happens
 		}
@@ -990,7 +990,7 @@ bool GeneralEvaluation::doQuery()
 
 	rewriteQuery();
 
-	// exit(0);
+	exit(0);
 
 	// this->strategy = Strategy(this->kvstore, this->pre2num,this->pre2sub, this->pre2obj, 
 	// 	this->limitID_predicate, this->limitID_literal, this->limitID_entity,
