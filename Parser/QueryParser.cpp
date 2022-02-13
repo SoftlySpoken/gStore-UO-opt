@@ -843,6 +843,9 @@ antlrcpp::Any QueryParser::visitGroupOrUnionGraphPattern(SPARQLParser::GroupOrUn
 	if (ctx->children.size() == 1)
 	{
 		group_pattern.addOneGroup();
+		// TODO: when there are multiple group graph patterns in the same level,
+		// the second addOneGroup will render the first empty
+		// (move the push_back explicitly here, or changing to emplace_back, doesn't help)
 		visitGroupGraphPattern(ctx->groupGraphPattern(0), group_pattern.getLastGroup());
 	}
 	else
