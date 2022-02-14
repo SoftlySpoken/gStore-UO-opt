@@ -79,12 +79,15 @@ class GeneralEvaluation
 			const vector<QueryTree::GroupPattern::SubGroupPattern> &multiBGP,
 			const vector<QueryTree::GroupPattern::Pattern> &subBGP,
 			Varset useful, vector<long long> &cost);
-		bool optionalCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
-			const QueryTree::GroupPattern::SubGroupPattern &optionalNode, Varset useful);
+		void optionalCostModel(const QueryTree::GroupPattern::SubGroupPattern &outerBGP, \
+			const QueryTree::GroupPattern::SubGroupPattern &optionalNode, Varset useful, \
+			vector<long long> &cost);
 		void extractLargestCommonSubBGP(const vector<QueryTree::GroupPattern::SubGroupPattern> &multiBGP, \
 			vector<QueryTree::GroupPattern::Pattern> &subBGP);
 		void getEncodeVarset(Varset &encode_varset, const Varset &useful, \
 			const vector<QueryTree::GroupPattern::Pattern> &smallBGP);
+		bool isBGPconnected(const vector<QueryTree::GroupPattern::Pattern> &patterns1, \
+			const vector<QueryTree::GroupPattern::Pattern> &patterns2);
 
 		bool doQuery();
 

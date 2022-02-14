@@ -223,8 +223,8 @@ class QueryTree
 
 				long long resSz;
 
-				SubGroupPattern(SubGroupPatternType _type):type(_type), resSz(0){}
-				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type), resSz(0)
+				SubGroupPattern(SubGroupPatternType _type):type(_type), resSz(1){}
+				SubGroupPattern(const SubGroupPattern& _sgp):type(_sgp.type), resSz(1)
 				{
 					pattern = _sgp.pattern;
 					patterns = _sgp.patterns;
