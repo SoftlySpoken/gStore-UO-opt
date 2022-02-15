@@ -2064,8 +2064,8 @@ TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
 			Varset occur;
 			for (size_t j = 0; j < group_pattern.sub_group_pattern[i].patterns.size(); j++)
 				occur += group_pattern.sub_group_pattern[i].patterns[j].varset;
-			// Only execute when check cache fails
-			if (!checkBasicQueryCache(group_pattern.sub_group_pattern[i].patterns, result, occur))
+			// Only execute when not all constant and check cache fails
+			if (!occur.empty() && !checkBasicQueryCache(group_pattern.sub_group_pattern[i].patterns, result, occur))
 			{
 				auto bgp_query = make_shared<BGPQuery>();
 				for (size_t j = 0; j < group_pattern.sub_group_pattern[i].patterns.size(); j++)
@@ -2155,6 +2155,12 @@ TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
 						result = new_result;
 					}
 				}
+			}
+			else if (occur.empty())
+			{
+				// All constant triple always has empty binding, join always empty
+				delete result;
+				result = new TempResultSet();
 			}
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
