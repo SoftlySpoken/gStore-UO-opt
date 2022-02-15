@@ -1138,7 +1138,7 @@ bool GeneralEvaluation::doQuery()
 
 	rewriteQuery();
 
-	exit(0);
+	// exit(0);
 
 	// this->strategy = Strategy(this->kvstore, this->pre2num,this->pre2sub, this->pre2obj, 
 	// 	this->limitID_predicate, this->limitID_literal, this->limitID_entity,
@@ -1175,7 +1175,8 @@ bool GeneralEvaluation::doQuery()
 	this->rewriting_evaluation_stack.back().group_pattern = this->query_tree.getGroupPattern();
 	this->rewriting_evaluation_stack.back().result = NULL;
 
-	this->temp_result = this->queryEvaluation(0);
+	// this->temp_result = this->queryEvaluation(0);
+	this->temp_result = this->queryEvaluationAfterOpt(0);
 
 	return true;
 }
@@ -1923,6 +1924,293 @@ TempResultSet* GeneralEvaluation::queryEvaluation(int dep)
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
 			TempResultSet *temp = queryEvaluation(dep + 1);
+			{
+				TempResultSet *new_result = new TempResultSet();
+
+				if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+					result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+				result->initial = false;
+			}
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
+		{
+			TempResultSet *new_result = new TempResultSet();
+			result->doFilter(group_pattern.sub_group_pattern[i].filter, *new_result, this->stringindex, group_pattern.group_pattern_subject_object_maximal_varset);
+
+			result->release();
+			delete result;
+
+			result = new_result;
+			result->initial = false;
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Bind_type)
+		{
+			TempResultSet *temp = new TempResultSet();
+			temp->results.push_back(TempResult());
+
+			temp->results[0].str_varset = group_pattern.sub_group_pattern[i].bind.varset;
+
+			temp->results[0].result.push_back(TempResult::ResultPair());
+			temp->results[0].result[0].str.push_back(group_pattern.sub_group_pattern[i].bind.str);
+
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+				result->initial = false;
+			}
+		}
+
+	// result->print();
+
+	this->rewriting_evaluation_stack.pop_back();
+
+	return result;
+}
+
+TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
+{
+	// If ASK query, and only one BGP, check if every triple consists of all constants
+	// If so, set a special result so that getFinalResult will know
+	if (this->query_tree.getQueryForm() == QueryTree::Ask_Query)
+	{
+		bool singleBGP = true, allConstants = true;
+		vector<Triple> triple_vt;
+		for (int i = 0; i < this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern.size(); i++)
+		{
+			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].type \
+				!= QueryTree::GroupPattern::SubGroupPattern::Pattern_type)
+			{
+				singleBGP = false;
+				break;
+			}
+			// Check if the triple consists of all constants
+			if (this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.subject.value[0] == '?' \
+				|| this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.predicate.value[0] == '?' \
+				|| this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.object.value[0] == '?')
+			{
+				allConstants = false;
+				break;
+			}
+			triple_vt.push_back(Triple(this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.subject.value, \
+				this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.predicate.value, \
+				this->rewriting_evaluation_stack[dep].group_pattern.sub_group_pattern[i].pattern.object.value));
+		}
+		if (singleBGP && allConstants)
+		{
+			// Check if these constant triples exist in database
+			bool exist = BGPQuery::CheckConstBGPExist(triple_vt, kvstore);
+			// Set a special result (indicates true/false) 
+			TempResultSet *result = new TempResultSet();
+			(*result).results.push_back(TempResult());
+			(*result).results[0].result.push_back(TempResult::ResultPair());
+			if (exist)
+				(*result).results[0].result[0].str.push_back("true");
+			else
+				(*result).results[0].result[0].str.push_back("false");
+			return result;
+		}
+	}
+
+	QueryTree::GroupPattern group_pattern = rewriting_evaluation_stack[dep].group_pattern;
+	TempResultSet *result = new TempResultSet();
+
+	// Iterate across all sub-group-patterns, process according to type
+	for (int i = 0; i < (int)group_pattern.sub_group_pattern.size(); i++)
+		if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Group_type)
+		{
+			group_pattern.sub_group_pattern[i].group_pattern.print(0);
+			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].group_pattern;
+			this->rewriting_evaluation_stack.back().result = NULL;
+			TempResultSet *temp = queryEvaluationAfterOpt(dep + 1);
+
+			if (result->results.empty())
+			{
+				delete result;
+				result = temp;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				temp->release();
+				result->release();
+				delete temp;
+				delete result;
+
+				result = new_result;
+				result->initial = false;
+			}
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::BGP_type)
+		{
+			Varset occur;
+			for (size_t j = 0; j < group_pattern.sub_group_pattern[i].patterns.size(); j++)
+				occur += group_pattern.sub_group_pattern[i].patterns[j].varset;
+			// Only execute when check cache fails
+			if (!checkBasicQueryCache(group_pattern.sub_group_pattern[i].patterns, result, occur))
+			{
+				auto bgp_query = make_shared<BGPQuery>();
+				for (size_t j = 0; j < group_pattern.sub_group_pattern[i].patterns.size(); j++)
+					bgp_query->AddTriple(Triple(\
+						group_pattern.sub_group_pattern[i].patterns[j].subject.value,
+						group_pattern.sub_group_pattern[i].patterns[j].predicate.value,
+						group_pattern.sub_group_pattern[i].patterns[j].object.value));
+
+				// Encode
+				long tv_begin = Util::get_cur_time();
+				bool curr_exist = bgp_query->EncodeSmallBGPQuery(bgp_query_total.get(), kvstore, occur.vars, \
+					this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
+				long tv_encode = Util::get_cur_time();
+				printf("during Encode, used %ld ms.\n", tv_encode - tv_begin);
+
+				// Execute (if all constants exist)
+				if (curr_exist)
+				{
+					QueryInfo query_info;
+
+					query_info.limit_ = false;
+					if(this->query_tree.getLimit()!=-1) {
+						query_info.limit_ = true;
+						query_info.limit_num_ = this->query_tree.getLimit();
+					}
+
+					query_info.is_distinct_ = this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct;
+
+					query_info.ordered_by_expressions_ = make_shared<vector<QueryTree::Order>>();
+					for(auto order_item:this->query_tree.getOrderVarVector())
+						query_info.ordered_by_expressions_->push_back(order_item);
+
+					unique_ptr<unsigned[]>& p2id = bgp_query->resultPositionToId();
+					p2id = unique_ptr<unsigned[]>(new unsigned [occur.vars.size()]);
+					for (size_t j = 0; j < occur.vars.size(); j++)
+						p2id[j] = bgp_query->get_var_id_by_name(occur.vars[j]);
+					bgp_query->print(kvstore);
+					this->optimizer_->DoQuery(bgp_query,query_info);
+
+					long tv_handle = Util::get_cur_time();
+					printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+
+					// Merge with current result
+					TempResultSet *temp = new TempResultSet();
+					temp->results.push_back(TempResult());
+					temp->results[0].id_varset = occur;
+					size_t varnum = occur.vars.size();
+					vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
+					size_t basicquery_result_num = basicquery_result.size();
+					temp->results[0].result.reserve(basicquery_result_num);
+					for (int j = 0; j < basicquery_result_num; j++)
+					{
+						unsigned *v = new unsigned[varnum];
+						memcpy(v, basicquery_result[j], sizeof(int) * varnum);
+						temp->results[0].result.push_back(TempResult::ResultPair());
+						temp->results[0].result.back().id = v;
+						temp->results[0].result.back().sz = varnum;
+					}
+					if (this->query_cache != NULL)
+					{
+						//if unconnected, time is incorrect
+						int time = tv_handle - tv_begin;
+						long tv_bftry = Util::get_cur_time();
+						bool success = this->query_cache->tryCaching(group_pattern.sub_group_pattern[i].patterns, \
+							temp->results[0], time);
+						if (success)	printf("QueryCache cached\n");
+						else			printf("QueryCache didn't cache\n");
+						long tv_aftry = Util::get_cur_time();
+						printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+					}
+					if (result->results.empty())
+					{
+						delete result;
+						result = temp;
+					}
+					else
+					{
+						TempResultSet *new_result = new TempResultSet();
+						result->doJoin(*temp, *new_result, this->stringindex, \
+							this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+						temp->release();
+						result->release();
+						delete temp;
+						delete result;
+
+						result = new_result;
+					}
+				}
+			}
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Union_type)
+		{
+			TempResultSet *sub_result_outer = new TempResultSet();
+
+			for (int j = 0; j < (int)group_pattern.sub_group_pattern[i].unions.size(); j++)
+			{
+				TempResultSet *sub_result;
+				this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+				this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].unions[j];
+				this->rewriting_evaluation_stack.back().result = NULL;
+				sub_result = queryEvaluationAfterOpt(dep + 1);
+				if (sub_result_outer->results.empty())
+				{
+					delete sub_result_outer;
+					sub_result_outer = sub_result;
+				}
+				else
+				{
+					TempResultSet *new_result = new TempResultSet();
+					sub_result_outer->doUnion(*sub_result, *new_result);
+
+					sub_result->release();
+					sub_result_outer->release();
+					delete sub_result;
+					delete sub_result_outer;
+
+					sub_result_outer = new_result;
+				}
+			}
+
+			if (result->results.empty())
+			{
+				delete result;
+				result = sub_result_outer;
+			}
+			else
+			{
+				TempResultSet *new_result = new TempResultSet();
+				result->doJoin(*sub_result_outer, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+
+				sub_result_outer->release();
+				result->release();
+				delete sub_result_outer;
+				delete result;
+
+				result = new_result;
+			}
+		}
+		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+		{
+			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
+			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
+			this->rewriting_evaluation_stack.back().result = NULL;
+			TempResultSet *temp = queryEvaluationAfterOpt(dep + 1);
 			{
 				TempResultSet *new_result = new TempResultSet();
 

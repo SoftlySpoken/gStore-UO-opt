@@ -113,6 +113,7 @@ class GeneralEvaluation
 		bool expanseFirstOuterUnionGroupPattern(QueryTree::GroupPattern &group_pattern, std::deque<QueryTree::GroupPattern> &queue);
 
 		TempResultSet* queryEvaluation(int dep);
+		TempResultSet* queryEvaluationAfterOpt(int dep);
 
 		void getFinalResult(ResultSet &ret_result);
 		void releaseResult();
