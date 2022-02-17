@@ -1136,7 +1136,11 @@ bool GeneralEvaluation::doQuery()
 	bgp_query_total->EncodeBGPQuery(kvstore, vector<string>(), \
 			this->query_tree.getProjectionModifier() == QueryTree::ProjectionModifier::Modifier_Distinct);
 
+	
+	long trw_begin = Util::get_cur_time();
 	rewriteQuery();
+	long trw_end = Util::get_cur_time();
+	printf("during Rewrite, used %ld ms.\n", trw_end - trw_begin);
 
 	// exit(0);
 
@@ -2105,55 +2109,55 @@ TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
 					bgp_query->print(kvstore);
 					this->optimizer_->DoQuery(bgp_query,query_info);
 
-					long tv_handle = Util::get_cur_time();
-					printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
+				}
+				long tv_handle = Util::get_cur_time();
+				printf("during Handle, used %ld ms.\n", tv_handle - tv_encode);
 
-					// Merge with current result
-					TempResultSet *temp = new TempResultSet();
-					temp->results.push_back(TempResult());
-					temp->results[0].id_varset = occur;
-					size_t varnum = occur.vars.size();
-					vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
-					size_t basicquery_result_num = basicquery_result.size();
-					temp->results[0].result.reserve(basicquery_result_num);
-					for (int j = 0; j < basicquery_result_num; j++)
-					{
-						unsigned *v = new unsigned[varnum];
-						memcpy(v, basicquery_result[j], sizeof(int) * varnum);
-						temp->results[0].result.push_back(TempResult::ResultPair());
-						temp->results[0].result.back().id = v;
-						temp->results[0].result.back().sz = varnum;
-					}
-					if (this->query_cache != NULL)
-					{
-						//if unconnected, time is incorrect
-						int time = tv_handle - tv_begin;
-						long tv_bftry = Util::get_cur_time();
-						bool success = this->query_cache->tryCaching(group_pattern.sub_group_pattern[i].patterns, \
-							temp->results[0], time);
-						if (success)	printf("QueryCache cached\n");
-						else			printf("QueryCache didn't cache\n");
-						long tv_aftry = Util::get_cur_time();
-						printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
-					}
-					if (result->results.empty())
-					{
-						delete result;
-						result = temp;
-					}
-					else
-					{
-						TempResultSet *new_result = new TempResultSet();
-						result->doJoin(*temp, *new_result, this->stringindex, \
-							this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+				// Merge with current result
+				TempResultSet *temp = new TempResultSet();
+				temp->results.push_back(TempResult());
+				temp->results[0].id_varset = occur;
+				size_t varnum = occur.vars.size();
+				vector<unsigned*> &basicquery_result = *(bgp_query->get_result_list_pointer());
+				size_t basicquery_result_num = basicquery_result.size();
+				temp->results[0].result.reserve(basicquery_result_num);
+				for (int j = 0; j < basicquery_result_num; j++)
+				{
+					unsigned *v = new unsigned[varnum];
+					memcpy(v, basicquery_result[j], sizeof(int) * varnum);
+					temp->results[0].result.push_back(TempResult::ResultPair());
+					temp->results[0].result.back().id = v;
+					temp->results[0].result.back().sz = varnum;
+				}
+				if (this->query_cache != NULL)
+				{
+					//if unconnected, time is incorrect
+					int time = tv_handle - tv_begin;
+					long tv_bftry = Util::get_cur_time();
+					bool success = this->query_cache->tryCaching(group_pattern.sub_group_pattern[i].patterns, \
+						temp->results[0], time);
+					if (success)	printf("QueryCache cached\n");
+					else			printf("QueryCache didn't cache\n");
+					long tv_aftry = Util::get_cur_time();
+					printf("during tryCache, used %ld ms.\n", tv_aftry - tv_bftry);
+				}
+				if (result->results.empty())
+				{
+					delete result;
+					result = temp;
+				}
+				else
+				{
+					TempResultSet *new_result = new TempResultSet();
+					result->doJoin(*temp, *new_result, this->stringindex, \
+						this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-						temp->release();
-						result->release();
-						delete temp;
-						delete result;
+					temp->release();
+					result->release();
+					delete temp;
+					delete result;
 
-						result = new_result;
-					}
+					result = new_result;
 				}
 			}
 			else if (occur.empty())
