@@ -1308,9 +1308,14 @@ TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
 					// Set candidate lists of common vars with the parent layer in rewriting_evaluation_stack //
 					if (dep > 0)
 					{
-						fillCandList(bgp_query, dep, occur.vars);
-						long tv_fillcand = Util::get_cur_time();
-						printf("after FillCand, used %ld ms.\n", tv_fillcand - tv_encode);
+						int fill_dep = fillCandList(bgp_query, dep, occur.vars);
+						if (fill_dep >= 0)
+						{
+							long tv_fillcand = Util::get_cur_time();
+							printf("after FillCand, used %ld ms, fill_dep = %d.\n", tv_fillcand - tv_encode, fill_dep);
+						}
+						else
+							printf("No stored result for FillCand\n");
 					}
 					
 					QueryInfo query_info;
@@ -1442,27 +1447,31 @@ TempResultSet* GeneralEvaluation::queryEvaluationAfterOpt(int dep)
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type || group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
 		{
+			// If the current result is already empty, don't need to go further
+			if (result == NULL || result->results.size() == 0 \
+				|| (result->results.size() == 1 && result->results[0].result.empty()))
+				continue;
+
 			this->rewriting_evaluation_stack.push_back(EvaluationStackStruct());
 			this->rewriting_evaluation_stack.back().group_pattern = group_pattern.sub_group_pattern[i].optional;
 			this->rewriting_evaluation_stack.back().result = NULL;
 			this->rewriting_evaluation_stack[dep].result = result;	// For OPTIONAL fillCandList
 			TempResultSet *temp = queryEvaluationAfterOpt(dep + 1);
-			{
-				TempResultSet *new_result = new TempResultSet();
 
-				if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
-					result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
-				else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
-					result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			TempResultSet *new_result = new TempResultSet();
 
-				temp->release();
-				result->release();
-				delete temp;
-				delete result;
+			if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Optional_type)
+				result->doOptional(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
+			else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Minus_type)
+				result->doMinus(*temp, *new_result, this->stringindex, this->query_tree.getGroupPattern().group_pattern_subject_object_maximal_varset);
 
-				result = new_result;
-				result->initial = false;
-			}
+			temp->release();
+			result->release();
+			delete temp;
+			delete result;
+
+			result = new_result;
+			result->initial = false;
 		}
 		else if (group_pattern.sub_group_pattern[i].type == QueryTree::GroupPattern::SubGroupPattern::Filter_type)
 		{
@@ -3377,15 +3386,17 @@ bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pat
 	return success;
 }
 
-void GeneralEvaluation::fillCandList(shared_ptr<BGPQuery> bgp_query, int dep, vector<string> &occur)
+int GeneralEvaluation::fillCandList(shared_ptr<BGPQuery> bgp_query, int dep, vector<string> &occur)
 {
-	if (dep <= 0)
-		return;
+	int curr_dep = dep - 1;
+	while (curr_dep >= 0 && (this->rewriting_evaluation_stack[curr_dep].result == NULL \
+		|| this->rewriting_evaluation_stack[curr_dep].result->results.size() == 0))
+		curr_dep--;
 
-	TempResultSet *&last_result = this->rewriting_evaluation_stack[dep - 1].result;
-
-	if (last_result == NULL)
-		return;
+	if (curr_dep < 0)
+		return -1;
+	
+	TempResultSet *&last_result = this->rewriting_evaluation_stack[curr_dep].result;
 
 	for (size_t k = 0; k < occur.size(); k++)
 	{
@@ -3422,6 +3433,7 @@ void GeneralEvaluation::fillCandList(shared_ptr<BGPQuery> bgp_query, int dep, ve
 			printf("fill var %s CandidateList size %d\n", occur[k].c_str(), (int)result_vector.size());
 		}
 	}
+	return curr_dep;
 }
 
 void GeneralEvaluation::fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset)
