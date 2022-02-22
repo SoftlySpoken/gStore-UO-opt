@@ -127,7 +127,7 @@ class GeneralEvaluation
 
 		int constructTriplePattern(QueryTree::GroupPattern& triple_pattern, int dep);
 		void getUsefulVarset(Varset& useful, int dep);
-		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful);
+		bool checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *&sub_result, Varset& useful);
 		void fillCandList(SPARQLquery& sparql_query, int dep, vector<vector<string> >& encode_varset);
 		void fillCandList(vector<shared_ptr<BGPQuery>>& bgp_query_vec, int dep, vector<vector<string> >& encode_varset);
 		int fillCandList(shared_ptr<BGPQuery> bgp_query, int dep, vector<string> &occur);	// For a single BGP

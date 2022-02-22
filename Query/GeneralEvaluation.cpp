@@ -290,7 +290,7 @@ bool GeneralEvaluation::rewriteQuery()
 	query_tree.print();
 
 	Varset useful = this->query_tree.getResultProjectionVarset() + this->query_tree.getGroupByVarset() \
-				+ this->query_tree.getOrderByVarset();;
+				+ this->query_tree.getOrderByVarset();
 	highLevelOpt(query_tree.getGroupPattern(), useful);
 
 	printf("==========After highLevelOpt Query Tree==========\n");
@@ -3350,7 +3350,7 @@ void GeneralEvaluation::getUsefulVarset(Varset& useful, int dep)
 	}
 }
 
-bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *sub_result, Varset& useful)
+bool GeneralEvaluation::checkBasicQueryCache(vector<QueryTree::GroupPattern::Pattern>& basic_query, TempResultSet *&sub_result, Varset& useful)
 {
 	bool success = false;
 	if (this->query_cache != NULL)
