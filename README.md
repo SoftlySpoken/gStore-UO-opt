@@ -1,137 +1,240 @@
-# gStore System
+This repository is the implementation of algorithms described in the paper "Efficient Execution of SPARQL Queries with OPTIONAL and UNION Expressions--A Graph Approach."
 
-Gstore System(also called gStore) is a graph database engine for managing large graph-structured data, which is open-source and targets at Linux operation systems. The whole project is written in C++, with the help of some libraries such as readline, antlr, and so on. Only source tarballs are provided currently, which means you have to compile the source code if you want to use our system.
+## Installation and Usage
 
-**The formal help document is in [English(EN)](docs/help/gStore_help.pdf) and [中文(ZH)](docs/help/gStore_help_ZH.pdf).**
+To compile, first run `make pre`, then run `make`. If compilation is unsuccessful due to a lack of system dependencies, please run the setup script under the directory `scripts/setup` corresponding to your environment.
 
-**The formal experiment result is in [Experiment](docs/test/formal_experiment.pdf).**
+To run a SPARQL query on a dataset, please first build the dataset by running:
 
-**We have built an IRC channel named #gStore on freenode, and you can visit [the homepage of gStore](http://gstore.cn).**
-
-## Change log
-
-**0.9.1（beta）：2021-11-25**
-
-New features in gStore 0.9.1 are listed as follows:
-
-- Decoupling the parsing and execution of queries in kernel, and further improvements on the query performance through optimized join ordering and other techniques. On complex queries, the performance is improved by over 40%.
-- Rewriting of the HTTP service component, ghttp, with improved robustness and the addition of functions such as user permission, heartbeat detection, batch import, and batch deletion; API documents are added.
-- Implementation of the Personalized PageRank (PPR) extension function, which can be invoked in the SELECT clause to calculate the correlation between entities.
-- Support for arithmetic operations (e.g., `?x + ?y = 5`) in the FILTER clause.
-- Support for transactional operations, such as begin, tquery (transactional query), commit, and rollback;
-- A new executive component, gserver, is added to provide another pathway for remote access of gStore aside from the ghttp component, which implements two-way communication via the socket API.
-- Unification of the format of command line arguments of executive components. The `--help` option is uniformly introduced (e.g., `$ bin/gbuild --help` or `$ bin/gbuild -h`), by which users can view the command manual including the meaning of each option.
-- A number of bug fixes.
-
-**0.9（beta）：2021-02-10**
-
-New features in version 0.9 include:
-
-- Upgrade of the SPARQL parser generator from ANTLR v3 to the newest, well-documented and well-maintained v4;
-- Support for writing numeric literals without datatype suffixes in SPARQL queries;
-- Support for arithmetic and logical operators in SELECT clause;
-- Support for the aggregates SUM, AVG, MIN and MAX in SELECT clause;
-- Additional support for built-in functions functions in FILTERs, including `datatype`, `contains`, `ucase`, `lcase`, `strstarts`, `now`, `year`, `month`, `day`, and `abs`;
-- Support for path-related functions as an extension of SPARQL 1.1, including cycle detection, shortest paths and K-hop reachability;
-- Support for full & incremental backup and recovery of databases, and automatic full backup can be enabled upon admin configuration;
-- Support for log-based rollback opertions;
-- Support for transactions with three levels of isolation: *read committed*, *snapshot isolation* and *serializable*;
-- Expanding data structures to hold large-scale graphs of up to five billion triples.
-
-The version is a beta version, you can get it by :
-```
-git clone https://github.com/pkumod/gStore.git
+```bash
+$ bin/gbuild <database_name> <dataset_path>
 ```
 
-**0.8（Stable）**
+Then run the query:
 
-The version is a stable version ,you can get it by 
+```bash
+$ bin/gquery <database_name> <query_path>
 ```
- git clone -b 0.8 https://github.com/pkumod/gStore.git
+
+The optimizations in our paper are implemented in the function `GeneralEvaluation::highLevelOpt` (Query/GeneralEvaluation.cpp).
+
+## Datasets
+
+Since the datasets we use in our experimental study are quite large (exceeding 100G), and can be easily obtained online, we provide their URLs below.
+
+- Real dataset: [DBpedia](https://wiki.dbpedia.org). The data dump we use in our experiments can be downloaded [here](http://downloads.dbpedia.org/3.9/en/) (all the .nt files need to be concatenated into a single file for gStore to process it).
+
+- Generators of synthetic datasets: [LUBM](http://swat.cse.lehigh.edu/projects/lubm/).
+
+## Queries Used in Experiments
+
+### Queries on LUBM
+
+#### q1.1
+
+```sparql
+SELECT * WHERE { <http://www.Department0.University0.edu/UndergraduateStudent91> ub:memberOf ?v1. { ?v2 ub:headOf ?v1. } UNION { ?v2 ub:worksFor ?v1. } ?v2 ub:undergraduateDegreeFrom ?v3.
+?v4 ub:doctoralDegreeFrom ?v3. ?v5 ub:publicationAuthor ?v2.
+{ ?v6 ub:headOf ?v1. } UNION { ?v6 ub:worksFor ?v1. }
+{ ?v2 ub:headOf ?v7. } UNION { ?v2 ub:worksFor ?v7. } ?v7 ub:name ?v8. }
 ```
 
+#### q1.2
 
-<!--**You can write your information in [survey](http://59.108.48.38/survey) if you like.**-->
+```sparql
+SELECT * WHERE { <http://www.Department1.University0.edu/UndergraduateStudent363> ub:takesCourse ?v1. OPTIONAL{ ?v2 ub:teachingAssistantOf ?v1. OPTIONAL{ ?v2 ub:memberOf ?v3. ?v4 ub:subOrganizationOf ?v3.
+?v4 ub:subOrganizationOf ?v5. ?v4 rdf:type ?v6.
+OPTIONAL{ ?v5 ub:subOrganizationOf ?v7. } } } }
+```
 
-## Getting Started
-### Compile from Source
-This system is really user-friendly and you can pick it up in several minutes. Remember to check your platform where you want to run this system by viewing [System Requirements](docs/DEMAND.md). After all are verified, please get this project's source code. There are several ways to do this:
+#### q1.3
 
-- (suggested)type `git clone https://github.com/pkumod/gStore.git` in your terminal or use git GUI to acquire it
+```sparql
+SELECT * WHERE { <http://www.Department0.University0.edu/UndergraduateStudent356> ub:memberOf ?v1. { ?v2 ub:worksFor ?v1. } UNION { ?v2 ub:headOf ?v1. } ?v1 rdf:type ?v3. OPTIONAL{ ?v4 ub:advisor ?v2.
+OPTIONAL{ ?v4 ub:teachingAssistantOf ?v5. ?v4 ub:name ?v6. } } OPTIONAL{ ?v7 ub:advisor ?v2. } }
+```
 
-- download the zip from this repository and extract it
+#### q1.4
 
-- fork this repository in your github account
+```sparql
+SELECT * WHERE {
+?v1 ub:emailAddress "UndergraduateStudent309@Department12.University0.edu". OPTIONAL{ ?v1 ub:memberOf ?v2. ?v2 ub:name ?v3.
+OPTIONAL{ { ?v4 ub:worksFor ?v2. } UNION { ?v4 ub:headOf ?v2. } ?v5 ub:publicationAuthor ?v4.
+OPTIONAL{ ?v6 ub:publicationAuthor ?v4. } } } }
+```
 
-Then you need to compile the project, for the first time you need to type `make pre` to prepare the `ANTLR` library and some Lexer/Parser programs.
-Later you do not need to type this command again, just use the `make` command in the home directory of gStore, then all executables will be generated.
-(For faster compiling speed, use `make -j4` instead, using how many threads is up to your machine)
-To check the correctness of the program, please type `make test` command.
+#### q1.5
 
-The first strategy is suggested to get the source code because you can easily acquire the updates of the code by typing `git pull` in the home directory of gStore repository. 
-In addition, you can directly check the version of the code by typing `git log` to see the commit logs.
-If you want to use code from other branches instead of master branch, like 'dev' branch, then:
+```sparql
+SELECT * WHERE { <http://www.Department1.University0.edu/UndergraduateStudent256> ub:memberOf ?v1.
+{ ?v2 ub:worksFor ?v1. } UNION { ?v2 ub:headOf ?v1. }
+{ ?v2 ub:worksFor ?v3. } UNION { ?v2 ub:headOf ?v3. }
+?v4 ub:headOf ?v1. ?v3 ub:subOrganizationOf ?v5.
+OPTIONAL{ ?v6 ub:publicationAuthor ?v2. }
+OPTIONAL{ { ?v7 ub:headOf ?v1. } UNION { ?v7 ub:worksFor ?v1. } } }
+```
 
-- clone the master branch and type `git checkout dev` in your terminal
+#### q2.1
 
-- clone the dev branch directly by typing `git clone -b dev`
+```sparql
+SELECT * WHERE {
+{ ?st ub:teachingAssistantOf ?course.
+OPTIONAL { ?st ub:takesCourse ?course2. ?pub1 ub:publicationAuthor ?st. } } { ?prof ub:teacherOf ?course. ?st ub:advisor ?prof.
+OPTIONAL { ?prof ub:researchInterest ?resint.
+?pub2 ub:publicationAuthor ?prof. } } }
+```
 
-### Deploy via Docker
-You can easily deploy gStore via Docker. We provide both of Dockerfile and docker image. Please see our [Docker Deployment Doc(EN)](docs/DOCKER_DEPLOY_EN.md) or [Docker部署文档(中文)](docs/DOCKER_DEPLOY_CN.md) for details.
+#### q2.2
 
-### Run
-To run gStore, please type `bin/gbuild database_name dataset_path` to build a database named by yourself. And you can use `bin/gquery database_name` command to query an existing database. What is more, `bin/ghttp` is a wonderful tool designed for you, as a database server which can be accessed via HTTP protocol. Notice that all commands should be typed in the root directory of gStore, and your database name should not end with ".db".
+```sparql
+SELECT * WHERE {
+{ ?pub rdf:type ub:Publication. ?pub ub:publicationAuthor ?st.
+?pub ub:publicationAuthor ?prof.
+OPTIONAL { ?st ub:emailAddress ?ste. ?st ub:telephone ?sttel. } }
+{ ?st ub:undergraduateDegreeFrom ?univ. ?dept ub:subOrganizationOf ?univ. OPTIONAL { ?head ub:headOf ?dept. ?others ub:worksFor ?dept. } }
+{ ?st ub:memberOf ?dept. ?prof ub:worksFor ?dept.
+OPTIONAL { ?prof ub:doctoralDegreeFrom ?univ1.
+?prof ub:researchInterest ?resint1. } } }
+```
 
-- - -
+#### q2.3
 
-## Advanced Help
+```sparql
+SELECT * WHERE {
+{ ?pub ub:publicationAuthor ?st. ?pub ub:publicationAuthor ?prof.
+?st rdf:type ub:GraduateStudent.
+OPTIONAL { ?st ub:undergraduateDegreeFrom ?univ1.
+?st ub:telephone ?sttel. } } { ?st ub:advisor ?prof.
+OPTIONAL { ?prof ub:doctoralDegreeFrom ?univ.
+?prof ub:researchInterest ?resint. } }
+{ ?st ub:memberOf ?dept. ?prof ub:worksFor ?dept. ?prof a ub:FullProfessor. OPTIONAL { ?head ub:headOf ?dept. ?others ub:worksFor ?dept. } } }
+```
 
-If you want to understand the details of the gStore system, or you want to try some advanced operations(for example, using the API, server/client), please see the chapters below.
+#### q2.4
 
-- [Basic Introduction](docs/INTRO.md): introduce the theory and features of gStore
+```sparql
+SELECT * WHERE {
+?x ub:worksFor <http://www.Department0.University0.edu>.
+?x a ub:FullProfessor.
+OPTIONAL { ?y ub:advisor ?x. ?x ub:teacherOf ?z. ?y ub:takesCourse ?z. } }
+```
 
-- [Install Guide](docs/INSTALL.md): instructions on how to install this system
+#### q2.5
 
-- [How To Use](docs/USAGE.md): detailed information about using the gStore system
+```sparql
+SELECT * WHERE {
+?x ub:worksFor <http://www.Department0.University12.edu>.
+?x a ub:FullProfessor.
+OPTIONAL { ?y ub:advisor ?x. ?x ub:teacherOf ?z. ?y ub:takesCourse ?z. } }
+```
 
-- [API Explanation](docs/API.md): guide you to develop applications based on our API
+#### q2.6
 
-- [Project Structure](docs/STRUCT.md): show the whole structure and process of this project
+```sparql
+SELECT * WHERE {
+?x ub:worksFor <http://www.Department0.University12.edu>.
+?x a ub:FullProfessor.
+OPTIONAL { ?x ub:emailAddress ?y1. ?x ub:telephone ?y2. ?x ub:name ?y3. } }
+```
 
-- [Related Essays](docs/ESSAY.md): contain essays and publications related with gStore
+### Queries on DBpedia
 
-- [Update Logs](docs/CHANGELOG.md): keep the logs of the system updates
+#### q1.1
 
-- [Test Results](docs/TEST.md): present the test results of a series of experiments
+```sparql
+SELECT * WHERE {
+?v1 dbo:wikiPageWikiLink dbr:Economic_system.
+?v1 nsprov:wasDerivedFrom ?v2.
+{ ?v1 purl:subject ?v3. } UNION { ?v3 skos:subject ?v1. }
+?v3 rdfs:label ?v4. ?v5 nsprov:wasDerivedFrom ?v2. ?v1 owl:sameAs ?v6. { ?v3 rdfs:label ?v7. } UNION { ?v3 foaf:name ?v7. }
+{ ?v5 purl:subject ?v8. } UNION { ?v8 skos:subject ?v5. } }
+```
 
-- - -
+#### q1.2
 
-## Other Business
+```sparql
+SELECT * WHERE {
+dbr:AdolfHitler foaf:isPrimaryTopicOf ?v1. ?v2 foaf:isPrimaryTopicOf ?v1. OPTIONAL{ ?v2 dbo:wikiPageRedirects ?v3. ?v4 foaf:primaryTopic ?v2. OPTIONAL{ ?v5 dbo:wikiPageWikiLink ?v3.
+OPTIONAL{ ?v6 dbo:wikiPageRedirects ?v5.
+OPTIONAL{ ?v6 dbo:wikiPageWikiLink ?v7. } } } } }
+```
 
-Bugs are recorded in [BUG REPORT](docs/BUGS.md).
-You are welcomed to submit the bugs you discover if they do not exist in this file.
+#### q1.3
 
-We have written a series of short essays addressing recurring challenges in using gStore to realize applications, which are placed in [Recipe Book](docs/TIPS.md).
+```sparql
+SELECT * WHERE {
+?v1 dbo:wikiPageWikiLink dbr:Abdul_Rahim_Wardak.
+?v1 owl:sameAs ?v2. ?v3 owl:sameAs ?v2.
+{ ?v3 purl:subject ?v4. } UNION { ?v3 dbo:wikiPageWikiLink ?v4. } ?v3 dbo:wikiPageWikiLink ?v1.
+{ ?v4 skos:prefLabel ?v5. } UNION { ?v4 rdfs:label ?v5. } OPTIONAL{ ?v6 owl:sameAs ?v2.
+OPTIONAL{ ?v6 dbo:wikiPageLength ?v7. } } }
+```
 
-You are welcome to report any advice or errors in the github Issues part of this repository, if not requiring in-time reply. However, if you want to urgent on us to deal with your reports, please email to <gjsjdbgroup@pku.edu.cn> to submit your suggestions and report bugs. A full list of our whole team is in [Mailing List](docs/MAIL.md).
+#### q1.4
 
-There are some restrictions when you use the current gStore project, you can see them on [Limit Description](docs/LIMIT.md).
+```sparql
+SELECT * WHERE {
+dbr:Functional_neuroimaging purl:subject ?v1.
+OPTIONAL{ ?v1 owl:sameAs ?v2. ?v1 rdf:type ?v3.
+?v4 owl:sameAs ?v2. ?v5 skos:related ?v4. OPTIONAL{ ?v6 skos:related ?v4. } OPTIONAL{ { ?v7 purl:subject ?v1. } UNION { ?v1 skos:subject ?v7. } OPTIONAL{ { ?v7 purl:subject ?v8. } UNION { ?v8 skos:subject ?v7. } } } } }
+```
 
-Sometimes you may find some strange phenomena(but not wrong case), or something hard to understand/solve(don't know how to do next), then do not hesitate to visit the [Frequently Asked Questions](docs/FAQ.md) page.
+#### q1.5
 
-Graph database engine is a new area and we are still trying to go further. Things we plan to do next is in [Future Plan](docs/PLAN.md) chapter, and we hope more and more people will support or even join us. You can support in many ways:
+```sparql
+SELECT * WHERE {
+?v1 dbo:wikiPageWikiLink dbr:Category:Cell_biology.
+{ ?v2 foaf:primaryTopic ?v1. } UNION { ?v1 foaf:isPrimaryTopicOf ?v2. }
+{ ?v2 foaf:primaryTopic ?v3. } UNION { ?v3 foaf:isPrimaryTopicOf ?v2. } ?v3 dbo:wikiPageWikiLink ?v1. OPTIONAL{ { ?v2 foaf:primaryTopic ?v4. } UNION { ?v4 foaf:isPrimaryTopicOf ?v2. } }
+OPTIONAL{ ?v5 dbo:phylum ?v3. ?v6 dbo:phylum ?v3.
+OPTIONAL{ { ?v7 foaf:primaryTopic ?v5. }
+UNION { ?v5 foaf:isPrimaryTopicOf ?v7. } } } }
+```
 
-- watch/star our project
+#### q2.1
 
-- fork this repository and submit pull requests to us
+```sparql
+SELECT * WHERE {
+{ ?v6 a dbo:PopulatedPlace. ?v6 dbo:abstract ?v1. ?v6 rdfs:label ?v2. ?v6 geo:lat ?v3. ?v6 geo:long ?v4. OPTIONAL { ?v6 foaf:depiction ?v8. } }
+OPTIONAL { ?v6 foaf:homepage ?v10. } OPTIONAL { ?v6 dbo:populationTotal ?v12. } OPTIONAL { ?v6 dbo:thumbnail ?v14. } }
+```
 
-- download and use this system, report bugs or suggestions
+#### q2.2
 
-- ...
+```sparql
+SELECT * WHERE {
+?v3 foaf:homepage ?v0. ?v3 a dbo:SoccerPlayer. ?v3 dbp:position ?v6. ?v3 dbp:clubs ?v8. ?v8 dbo:capacity ?v1. ?v3 dbo:birthPlace ?v5. OPTIONAL { ?v3 dbo:number ?v9. } }
+```
 
-People who inspire us or contribute to this project will be listed in the [Thanks List](docs/THANK.md) chapter.
+#### q2.3
 
+```sparql
+SELECT * WHERE {
+?v5 dbo:thumbnail ?v4. ?v5 rdf:type dbo:Person. ?v5 rdfs:label ?v. ?v5 foaf:homepage ?v8. OPTIONAL { ?v5 foaf:homepage ?v10. } }
+```
 
+#### q2.4
 
-<!--This whole document is divided into different pieces, and each them is stored in a markdown file. You can see/download the combined markdown file in [help_markdown](docs/gStore_help.md), and for html file, please go to [help_html](docs/gStore_help.html). What is more, we also provide help file in pdf format, and you can visit it in [help_pdf](docs/latex/gStore_help.pdf).-->
+```sparql
+SELECT * WHERE {
+{ ?v2 a dbo:Settlement. ?v2 rdfs:label ?v. ?v6 a dbo:Airport. ?v6 dbo:city ?v2. ?v6 dbp:iata ?v5.
+OPTIONAL { ?v6 foaf:homepage ?v7. } }
+OPTIONAL { ?v6 dbp:nativename ?v8. } }
+```
 
+#### q2.5
+
+```sparql
+SELECT * WHERE {
+?v4 skos:subject ?v. ?v4 foaf:name ?v6. OPTIONAL { ?v4 rdfs:comment ?v8. } }
+```
+
+#### q2.6
+
+```sparql
+SELECT * WHERE {
+?v0 rdfs:comment ?v1. ?v0 foaf:page ?v. OPTIONAL { ?v0 skos:subject ?v6. } OPTIONAL { ?v0 dbp:industry ?v5. } OPTIONAL { ?v0 dbp:location ?v2. } OPTIONAL { ?v0 dbp:locationCountry ?v3. }
+OPTIONAL { ?v0 dbp:locationCity ?v9. ?a dbp:manufacturer ?v0. } OPTIONAL { ?v0 dbp:products ?v11. ?b dbp:model ?v0. }
+OPTIONAL { ?v0 georss:point ?v10. }
+OPTIONAL { ?v0 rdf:type ?v7. } }
+```
