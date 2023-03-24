@@ -1,4 +1,4 @@
-This repository is the implementation of algorithms described in the paper "Efficient Execution of SPARQL Queries with OPTIONAL and UNION Expressions--A Graph Approach."
+This repository is the implementation of algorithms described in the paper "Efficient Execution of SPARQL Queries with OPTIONAL and UNION Expressions."
 
 ## Installation and Usage
 
