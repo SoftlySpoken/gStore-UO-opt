@@ -32,6 +32,7 @@ public:
 	KVstore *kvstore;
 	BGPQuery *bgpquery;
 	Statistics *statistics;
+	BGPPlan* bgp_plan;
 	IDCachesSharePtr & id_caches;
 	TYPE_TRIPLE_NUM triples_num;
 	TYPE_PREDICATE_ID limitID_predicate;
@@ -67,7 +68,7 @@ public:
 	long long BGP_cost_est;
 	long long BGP_res_size_est;
 
-	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
+	PlanGenerator(KVstore *kvstore_, BGPQuery *bgpquery_, Statistics *statistics_, BGPPlan* _bgp_plan, IDCachesSharePtr& id_caches_, TYPE_TRIPLE_NUM triples_num_,
 				  	TYPE_PREDICATE_ID limitID_predicate_, TYPE_ENTITY_LITERAL_ID limitID_literal_, TYPE_ENTITY_LITERAL_ID limitID_entity_,
 				  TYPE_TRIPLE_NUM* pre2num_, TYPE_TRIPLE_NUM* pre2sub_, TYPE_TRIPLE_NUM* pre2obj_, shared_ptr<Transaction> txn_);
 
@@ -99,6 +100,8 @@ public:
 	long long cost_model_for_p2so_optimization(unsigned node_1_id, unsigned node_2_id);
 	long long cost_model_for_wco(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
 												 unsigned next_node, const vector<unsigned> &now_plan_node);
+	long long cost_model_for_wco_limitk(PlanTree* last_plan, const vector<unsigned> &last_plan_node,
+											unsigned next_node, const vector<unsigned> &now_plan_node);
 
 	long long cost_model_for_binary(const vector<unsigned> &plan_a_nodes, const vector<unsigned> &plan_b_nodes,
 										PlanTree* plan_a, PlanTree* plan_b);
@@ -117,7 +120,7 @@ public:
 	vector<shared_ptr<FeedOneNode>> completecandidate();
 	void considervarscan();
 	void get_nei_by_sub_plan_nodes(const vector<unsigned> &last_plan_node, set<unsigned> &nei_node);
-	void considerwcojoin(unsigned var_num);
+	void considerwcojoin(unsigned var_num, bool not_limitk);
 	void considerbinaryjoin(unsigned var_num);
 	void addsatellitenode(PlanTree* best_plan);
 

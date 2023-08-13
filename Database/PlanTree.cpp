@@ -1087,6 +1087,81 @@ void PlanTree::add_satellitenode(BGPQuery *bgpquery, unsigned int satellitenode_
 // 	delete_tree_node(root_node);
 // }
 
+
+PlanTree* PlanTree::string_to_node(BGPQuery* bgpquery, vector<unsigned> &node_id, vector<string> &node_string, vector<int> &degree) {
+	stack<PlanTree*> st;
+	for(int i = 0; i < node_id.size(); ++i) {
+		if(degree[i] == 0){
+			vector<unsigned> a{};
+			st.push(new PlanTree(node_id[i], bgpquery, vector<unsigned>(),
+								 make_shared<vector<EdgeInfo>>(), make_shared<vector<EdgeConstantInfo>>(),
+								 a));
+		}else{
+			if(degree[i] == 2){
+				PlanTree* right = st.top();
+				st.pop();
+				PlanTree* left = st.top();
+				st.pop();
+				set<unsigned> join_nodes;
+				for(auto x:left->already_so_var){
+					if(std::find(right->already_so_var.begin(), right->already_so_var.end(), x) != right->already_so_var.end()){
+						join_nodes.insert(x);
+					}
+				}
+				st.push(new PlanTree(left, right, bgpquery, join_nodes));
+				delete right;
+				delete left;
+			}else{
+				PlanTree* left = st.top();
+				st.pop();
+				st.push(new PlanTree(left, bgpquery, node_id[i]));
+				delete left;
+
+			}
+		}
+	}
+	return st.top();
+}
+
+PlanTree::PlanTree(BGPQuery* bgpquery, BGPPlan *bgp_plan) {
+	vector<int> &degree = bgp_plan->node_degrees;
+	vector<string> &node_string = bgp_plan->variable_nodes;
+	vector<unsigned> &node_ids = bgp_plan->node_ids;
+	for(unsigned i = 0; i < node_string.size(); ++i){
+		node_ids.emplace_back(bgpquery->get_var_id_by_name(node_string[i]));
+	}
+	root_node = new Tree_node((this->string_to_node(bgpquery, node_ids, node_string, degree))->root_node);
+}
+
+
+void PlanTree::node_to_string(BGPQuery* bgpquery, Tree_node *node, vector<string> &node_string, vector<unsigned> &node_ids, vector<int> &degree) {
+	int deg = 0;
+	if(node->left_node){
+		node_to_string(bgpquery, node->left_node, node_string, node_ids, degree);
+		++deg;
+	}
+	if(node->right_node){
+		node_to_string(bgpquery, node->right_node, node_string, node_ids, degree);
+		++deg;
+	}
+	node_string.push_back(node->node->join_type_ == StepOperation::JoinType::JoinNode ?
+						  bgpquery->get_var_name_by_id(node->node->join_node_->node_to_join_) : "?BJ");
+
+	node_ids.push_back(node->node->join_type_ == StepOperation::JoinType::JoinNode ?
+						  node->node->join_node_->node_to_join_ : UINT_MAX);
+
+	degree.push_back(deg);
+}
+
+void PlanTree::plan_to_string(BGPQuery* bgpquery, BGPPlan* bgp_plan) {
+	vector<int> &degree = bgp_plan->node_degrees;
+	vector<string> &node_string = bgp_plan->variable_nodes;
+	vector<unsigned> &node_ids = bgp_plan->node_ids;
+	node_to_string(bgpquery, this->root_node, node_string, node_ids, degree);
+
+}
+
+
 void PlanTree::print_tree_node(Tree_node *node, BGPQuery *bgpquery) {
 	if(node == nullptr)
 		return;

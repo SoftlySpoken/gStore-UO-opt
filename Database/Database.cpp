@@ -111,6 +111,8 @@ Database::Database(string _name)
 	this->literal_buffer = NULL;
 	this->literal_buffer_size = 0;
 
+	this->bgp_plan = nullptr;
+
 	this->query_cache = new QueryCache();
 
 	//this->trie = NULL;
@@ -1543,19 +1545,17 @@ Database::unload()
 	delete this->literal_buffer;
 	this->literal_buffer = NULL;
 
-	//this->vstree->saveTree();
-	//delete this->vstree;
-	//this->vstree = NULL;
-	//cout << "delete kvstore" << endl;
 	delete this->kvstore;
 	this->kvstore = NULL;
 	//cout << "delete stringindex" << endl;
 	delete this->stringindex;
 	this->stringindex = NULL;
 
-	this->saveDBInfoFile();
-	this->writeIDinfo();
-	this->initIDinfo();
+	if(if_loaded) {
+		this->saveDBInfoFile();
+		this->writeIDinfo();
+		this->initIDinfo();
+	}
 
 	this->if_loaded = false;
 	this->clear_update_log();
@@ -1744,7 +1744,7 @@ Database::query(const string _query, ResultSet& _result_set, FILE* _fp, bool upd
 	string dictionary_store_path = this->store_path + "/dictionary.dc"; 	
 
 	this->stringindex->SetTrie(this->kvstore->getTrie());
-	GeneralEvaluation general_evaluation(this->kvstore, this->statistics, this->stringindex, this->query_cache, \
+	GeneralEvaluation general_evaluation(this->kvstore, this->bgp_plan, this->statistics, this->stringindex, this->query_cache, \
 		this->pre2num, this->pre2sub, this->pre2obj, this->triples_num, this->limitID_predicate, this->limitID_literal, \
 		this->limitID_entity, this->csr, txn);
 	if(txn != nullptr)
@@ -2059,6 +2059,7 @@ Database::build(const string& _rdf_file, Socket& socket)
 	resJson = CreateJson(1, "building", msg);
 	socket.send(resJson);
 
+	this->if_loaded = true;
 	return true;
 }
 
@@ -2157,6 +2158,7 @@ Database::build(const string& _rdf_file)
 	//string cmd = "rm -rf " + _entry_file;
 	//system(cmd.c_str());
 	//cout << "signature file removed" << endl;
+	this->if_loaded = true;
 
 	return true;
 }

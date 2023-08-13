@@ -80,7 +80,7 @@ class Optimizer
 {
  public:
 
-  Optimizer(KVstore* kv_store, Statistics *statistics, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
+  Optimizer(KVstore* kv_store, Statistics *statistics, BGPPlan* bgp_plan, TYPE_TRIPLE_NUM* pre2num, TYPE_TRIPLE_NUM* pre2sub,
 			TYPE_TRIPLE_NUM* pre2obj, TYPE_TRIPLE_NUM triples_num, TYPE_PREDICATE_ID limitID_predicate,
 			TYPE_ENTITY_LITERAL_ID limitID_literal, TYPE_ENTITY_LITERAL_ID limitID_entity, shared_ptr<Transaction> txn);
   ~Optimizer()=default;
@@ -125,6 +125,7 @@ class Optimizer
  private:
   KVstore* kv_store_;
   Statistics* statistics;
+  BGPPlan* bgp_plan;
 
   shared_ptr<vector<TYPE_ENTITY_LITERAL_ID>> order_by_list_; // empty if not using 'orderby'
   TYPE_ENTITY_LITERAL_ID limit_num_; // -1 if not limit result size

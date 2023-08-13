@@ -455,8 +455,8 @@ public:
 	//You can call it by Util util in the first of your main program
 	//Another way is to build a GstoreApplication program, and do this configure in the initialization of the application
 	static bool configure();  //read init.conf and set the parameters for this system
-	static bool configure_new(); //read gstore.ini and set the parameters for this system
-	static bool setGlobalConfig(INIParser& parser, string rootname, string keyname);
+	static void configure_new(); //read gstore.ini and set the parameters for this system
+	static void setGlobalConfig(INIParser& parser, string rootname, string keyname);
 	static string getConfigureValue(string keyname);
 	static bool config_setting();
 	static bool config_advanced();
@@ -1243,6 +1243,23 @@ class MD5
         }
 };
 
+struct BGPPlan
+{
+	std::vector<std::string> variable_nodes;
+	std::vector<int> node_degrees;
+
+    std::vector<unsigned> true_card_num;
+    std::vector<unsigned> est_card_num;
+
+    std::vector<long> exe_time;
+
+	// do_plan true means seed a plan
+    bool do_plan = false;
+    
+    bool input_plan_correctness = true;
+    std::vector<unsigned> node_ids;
+
+};
 // Concat y at the end of x, put into sum
 template <class T>
 void Util::vectorSum(const std::vector<T> &x, const std::vector<T> &y, std::vector<T> &sum)

@@ -37,6 +37,7 @@ class GeneralEvaluation
 		int well_designed;
 		// VSTree *vstree;
 		KVstore *kvstore;
+		BGPPlan* bgp_plan;
 		StringIndex *stringindex;
 		Strategy strategy;
 		shared_ptr<Optimizer> optimizer_;
@@ -60,7 +61,7 @@ class GeneralEvaluation
     	bool export_flag;
 
 	public:
-		GeneralEvaluation(KVstore *_kvstore, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
+		GeneralEvaluation(KVstore *_kvstore, BGPPlan* _bgp_plan, Statistics *_statistics, StringIndex *_stringindex, QueryCache *_query_cache, \
 			TYPE_TRIPLE_NUM *_pre2num,TYPE_TRIPLE_NUM *_pre2sub, TYPE_TRIPLE_NUM *_pre2obj, \
 			TYPE_TRIPLE_NUM _triples_num, TYPE_PREDICATE_ID _limitID_predicate, TYPE_ENTITY_LITERAL_ID _limitID_literal, \
 			TYPE_ENTITY_LITERAL_ID _limitID_entity, CSR *_csr, shared_ptr<Transaction> txn = nullptr);
