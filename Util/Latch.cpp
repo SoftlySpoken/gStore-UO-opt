@@ -40,4 +40,5 @@ bool Latch::unlock()
 // Release the lock
 {
 	pthread_rwlock_unlock(&lock);
+	return true;
 }

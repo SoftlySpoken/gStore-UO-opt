@@ -243,11 +243,12 @@ Util::config_advanced()
 	return true;
 }
 
-bool Util::setGlobalConfig(INIParser& parser, string rootname, string keyname)
+bool Util::setGlobalConfig(INIParser& parser, const string &rootname, const string &keyname)
 {
     string value = parser.GetValue(rootname, keyname);
     if(value.empty()==false)
     Util::global_config[keyname] = value;
+    return true;
 }
 
 string Util::getConfigureValue(string keyname)
@@ -292,7 +293,7 @@ bool Util::configure_new()
         cout << it->first << " : " << it->second << endl;
     }
     cout << endl;
-
+    return true;
 }
 
 bool
@@ -2453,6 +2454,7 @@ Util::add_transactionlog(std::string db_name, std::string user, std::string TID,
 
     fclose(fp);
     pthread_rwlock_unlock(&transactionlog_lock);
+    return 0;
 }
 
 int

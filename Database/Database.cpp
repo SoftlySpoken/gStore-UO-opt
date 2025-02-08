@@ -1706,7 +1706,7 @@ Database::getlimitID_predicate()
 mutex&
 Database::get_query_parse_lock()
 {
-	//return this->query_parse_lock;
+	return this->query_parse_lock;
 }
 
 void

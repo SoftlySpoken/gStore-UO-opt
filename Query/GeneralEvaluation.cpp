@@ -295,6 +295,7 @@ bool GeneralEvaluation::rewriteQuery()
 
 	printf("==========After highLevelOpt Query Tree==========\n");
 	query_tree.print();
+	return true;
 }
 
 int GeneralEvaluation::combineBGPunfoldUnion(QueryTree::GroupPattern &group_pattern)
