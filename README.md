@@ -22,9 +22,9 @@ The optimizations in our paper are implemented in the function `GeneralEvaluatio
 
 Since the datasets we use in our experimental study are quite large (exceeding 100G), and can be easily obtained online, we provide their URLs below.
 
-- Real dataset: [DBpedia](https://wiki.dbpedia.org). The data dump we use in our experiments can be downloaded [here](http://downloads.dbpedia.org/3.9/en/) (all the .nt files need to be concatenated into a single file for gStore to process it).
+- Real dataset: [DBpedia](https://wiki.dbpedia.org). The data dump we use in our experiments can be downloaded [here](http://downloads.dbpedia.org/3.9/en/) (all the .nt files need to be concatenated into a single file for gStore to process it). You can use the helper script download_concat_DBpedia.py to complete the download and concatenation process.
 
-- Generators of synthetic datasets: [LUBM](http://swat.cse.lehigh.edu/projects/lubm/).
+- Generators of synthetic datasets: [LUBM](http://swat.cse.lehigh.edu/projects/lubm/). We use uba1.7. After generating the OWL files with the generator, you can use the helper script owl2nt.py to convert them into a single N-Triples file.
 
 ## Queries Used in Experiments
 
