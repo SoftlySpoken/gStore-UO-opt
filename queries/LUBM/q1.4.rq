@@ -1,0 +1,6 @@
+PREFIX ub:   <http://example.org#>
+
+SELECT * WHERE {
+?v1 ub:emailAddress "UndergraduateStudent309@Department12.University0.edu". OPTIONAL{ ?v1 ub:memberOf ?v2. ?v2 ub:name ?v3.
+OPTIONAL{ { ?v4 ub:worksFor ?v2. } UNION { ?v4 ub:headOf ?v2. } ?v5 ub:publicationAuthor ?v4.
+OPTIONAL{ ?v6 ub:publicationAuthor ?v4. } } } }

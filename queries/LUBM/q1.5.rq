@@ -1,0 +1,8 @@
+PREFIX ub:   <http://example.org#>
+
+SELECT * WHERE { <http://www.Department1.University0.edu/UndergraduateStudent256> ub:memberOf ?v1.
+{ ?v2 ub:worksFor ?v1. } UNION { ?v2 ub:headOf ?v1. }
+{ ?v2 ub:worksFor ?v3. } UNION { ?v2 ub:headOf ?v3. }
+?v4 ub:headOf ?v1. ?v3 ub:subOrganizationOf ?v5.
+OPTIONAL{ ?v6 ub:publicationAuthor ?v2. }
+OPTIONAL{ { ?v7 ub:headOf ?v1. } UNION { ?v7 ub:worksFor ?v1. } } }

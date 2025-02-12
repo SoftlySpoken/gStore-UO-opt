@@ -1,0 +1,10 @@
+PREFIX ub:   <http://example.org#>
+
+SELECT * WHERE {
+{ ?pub rdf:type ub:Publication. ?pub ub:publicationAuthor ?st.
+?pub ub:publicationAuthor ?prof.
+OPTIONAL { ?st ub:emailAddress ?ste. ?st ub:telephone ?sttel. } }
+{ ?st ub:undergraduateDegreeFrom ?univ. ?dept ub:subOrganizationOf ?univ. OPTIONAL { ?head ub:headOf ?dept. ?others ub:worksFor ?dept. } }
+{ ?st ub:memberOf ?dept. ?prof ub:worksFor ?dept.
+OPTIONAL { ?prof ub:doctoralDegreeFrom ?univ1.
+?prof ub:researchInterest ?resint1. } } }

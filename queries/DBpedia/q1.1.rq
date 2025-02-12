@@ -1,0 +1,19 @@
+PREFIX purl:   <http://purl.org/dc/terms/>
+PREFIX nsprov:   <http://www.w3.org/ns/prov#>
+PREFIX georss:   <http://www.georss.org/georss/>
+PREFIX dbo:   <http://dbpedia.org/ontology/>
+PREFIX owl:   <http://www.w3.org/2002/07/owl#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbp:   <http://dbpedia.org/property/>
+PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+PREFIX dbr:   <http://dbpedia.org/resource/>
+PREFIX geo:   <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>
+
+SELECT * WHERE {
+?v1 dbo:wikiPageWikiLink dbr:Economic_system.
+?v1 nsprov:wasDerivedFrom ?v2.
+{ ?v1 purl:subject ?v3. } UNION { ?v3 skos:subject ?v1. }
+?v3 rdfs:label ?v4. ?v5 nsprov:wasDerivedFrom ?v2. ?v1 owl:sameAs ?v6. { ?v3 rdfs:label ?v7. } UNION { ?v3 foaf:name ?v7. }
+{ ?v5 purl:subject ?v8. } UNION { ?v8 skos:subject ?v5. } }

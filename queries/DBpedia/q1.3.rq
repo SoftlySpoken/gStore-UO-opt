@@ -1,0 +1,19 @@
+PREFIX purl:   <http://purl.org/dc/terms/>
+PREFIX nsprov:   <http://www.w3.org/ns/prov#>
+PREFIX georss:   <http://www.georss.org/georss/>
+PREFIX dbo:   <http://dbpedia.org/ontology/>
+PREFIX owl:   <http://www.w3.org/2002/07/owl#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbp:   <http://dbpedia.org/property/>
+PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+PREFIX dbr:   <http://dbpedia.org/resource/>
+PREFIX geo:   <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>
+
+SELECT * WHERE {
+?v1 dbo:wikiPageWikiLink dbr:Abdul_Rahim_Wardak.
+?v1 owl:sameAs ?v2. ?v3 owl:sameAs ?v2.
+{ ?v3 purl:subject ?v4. } UNION { ?v3 dbo:wikiPageWikiLink ?v4. } ?v3 dbo:wikiPageWikiLink ?v1.
+{ ?v4 skos:prefLabel ?v5. } UNION { ?v4 rdfs:label ?v5. } OPTIONAL{ ?v6 owl:sameAs ?v2.
+OPTIONAL{ ?v6 dbo:wikiPageLength ?v7. } } }

@@ -1,0 +1,6 @@
+PREFIX ub:   <http://example.org#>
+
+SELECT * WHERE {
+?x ub:worksFor <http://www.Department0.University12.edu>.
+?x a ub:FullProfessor.
+OPTIONAL { ?x ub:emailAddress ?y1. ?x ub:telephone ?y2. ?x ub:name ?y3. } }

@@ -1,0 +1,17 @@
+PREFIX purl:   <http://purl.org/dc/terms/>
+PREFIX nsprov:   <http://www.w3.org/ns/prov#>
+PREFIX georss:   <http://www.georss.org/georss/>
+PREFIX dbo:   <http://dbpedia.org/ontology/>
+PREFIX owl:   <http://www.w3.org/2002/07/owl#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX dbp:   <http://dbpedia.org/property/>
+PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX foaf:   <http://xmlns.com/foaf/0.1/>
+PREFIX dbr:   <http://dbpedia.org/resource/>
+PREFIX geo:   <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>
+
+SELECT * WHERE {
+dbr:Functional_neuroimaging purl:subject ?v1.
+OPTIONAL{ ?v1 owl:sameAs ?v2. ?v1 rdf:type ?v3.
+?v4 owl:sameAs ?v2. ?v5 skos:related ?v4. OPTIONAL{ ?v6 skos:related ?v4. } OPTIONAL{ { ?v7 purl:subject ?v1. } UNION { ?v1 skos:subject ?v7. } OPTIONAL{ { ?v7 purl:subject ?v8. } UNION { ?v8 skos:subject ?v7. } } } } }

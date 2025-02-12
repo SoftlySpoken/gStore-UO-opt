@@ -1,0 +1,7 @@
+PREFIX ub:   <http://example.org#>
+
+SELECT * WHERE {
+{ ?st ub:teachingAssistantOf ?course.
+OPTIONAL { ?st ub:takesCourse ?course2. ?pub1 ub:publicationAuthor ?st. } } { ?prof ub:teacherOf ?course. ?st ub:advisor ?prof.
+OPTIONAL { ?prof ub:researchInterest ?resint.
+?pub2 ub:publicationAuthor ?prof. } } }
