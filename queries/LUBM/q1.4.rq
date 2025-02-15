@@ -1,4 +1,5 @@
 PREFIX ub:   <http://example.org#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 
 SELECT * WHERE {
 ?v1 ub:emailAddress "UndergraduateStudent309@Department12.University0.edu". OPTIONAL{ ?v1 ub:memberOf ?v2. ?v2 ub:name ?v3.
